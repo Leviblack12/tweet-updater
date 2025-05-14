@@ -1,0 +1,24 @@
+name: Update Tweet Gist
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # runs every hour
+  workflow_dispatch:      # allows manual runs
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch latest tweet and update gist
+        run: |
+          curl -s -X GET "https://api.twitter.com/2/users/1587169128241309696/tweets?max_results=5&exclude=retweets,replies&tweet.fields=created_at" \
+            -H "Authorization: Bearer ${{ secrets.TWITTER_BEARER_TOKEN }}" > tweets.json
+
+          TWEET_ID=$(jq -r '.data[0].id' tweets.json)
+          echo "{ \"url\": \"https://twitter.com/BWBaseball_Mtka/status/$TWEET_ID\" }" > latest-tweet.json
+
+          curl -X PATCH \
+            -H "Authorization: token ${{ secrets.GIST_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"files\": {\"latest-tweet.json\": {\"content\": \"$(cat latest-tweet.json)\"}}}" \
+            https://api.github.com/gists/8359cfb1d50d98fcefe7b1e8585087c2
