@@ -1,7 +1,7 @@
 name: Update Tweet Gist
 
 on:
-  workflow_dispatch:       # allows manual runs
+  workflow_dispatch:       # allows manual run
   schedule:
     - cron: '0 * * * *'     # every hour
 
@@ -26,20 +26,28 @@ jobs:
           cat tweets.json
           echo "====================================="
 
+          # Check if rate-limited
+          STATUS=$(jq -r '.status // empty' tweets.json)
+          if [ "$STATUS" = "429" ]; then
+            echo "❌ Rate limited by Twitter API. Skipping update."
+            exit 0
+          fi
+
           TWEET_ID=$(jq -r '.data[0].id' tweets.json)
           echo "🆔 Latest tweet ID: $TWEET_ID"
 
           if [ "$TWEET_ID" = "null" ] || [ -z "$TWEET_ID" ]; then
-            echo "{ \"url\": \"https://twitter.com/BWBaseball_Mtka/status/1234567890\" }" > latest-tweet.json
-          else
-            echo "{ \"url\": \"https://twitter.com/BWBaseball_Mtka/status/$TWEET_ID\" }" > latest-tweet.json
+            echo "⚠️ No tweet ID found. Skipping update."
+            exit 0
           fi
+
+          echo "{ \"url\": \"https://twitter.com/BWBaseball_Mtka/status/$TWEET_ID\" }" > latest-tweet.json
 
           echo "✏️ Updating Gist..."
           curl -X PATCH \
             -H "Authorization: token ${{ secrets.GIST_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "$(jq -n --arg content "$(cat latest-tweet.json)" '{"files": {"latest-tweet.json": {"content": $content}}}')"
+            -d "$(jq -n --arg content "$(cat latest-tweet.json)" '{"files": {"latest-tweet.json": {"content": $content}}}')" \
             https://api.github.com/gists/8359cfb1d50d98fcefe7b1e8585087c2
 
           echo "✅ Done."
