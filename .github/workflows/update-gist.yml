@@ -3,7 +3,7 @@ name: Update Tweet Gist
 on:
   workflow_dispatch:       # allows manual run
   schedule:
-    - cron: '0 * * * *'     # every hour
+  - cron: '*/15 * * * *'  # every 15 minutes
 
 jobs:
   update:
