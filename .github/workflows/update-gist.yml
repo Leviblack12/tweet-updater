@@ -39,7 +39,7 @@ jobs:
           curl -X PATCH \
             -H "Authorization: token ${{ secrets.GIST_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"files\": {\"latest-tweet.json\": {\"content\": \"$(cat latest-tweet.json)\"}}}" \
+            -d "$(jq -n --arg content "$(cat latest-tweet.json)" '{"files": {"latest-tweet.json": {"content": $content}}}')"
             https://api.github.com/gists/8359cfb1d50d98fcefe7b1e8585087c2
 
           echo "✅ Done."
